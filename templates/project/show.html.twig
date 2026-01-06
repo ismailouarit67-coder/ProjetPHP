@@ -1,0 +1,235 @@
+{% extends 'base.html.twig' %}
+
+{% block title %}{{ project.title }}{% endblock %}
+
+{% block main %}
+<div class="container py-4">
+
+  <a href="{{ path('project_index') }}" class="btn btn-link p-0 mb-3">← Retour</a>
+
+  {# Flash messages #}
+  {% for label, messages in app.flashes %}
+    {% for message in messages %}
+      <div class="alert alert-{{ label }} alert-dismissible fade show" role="alert">
+        {{ message }}
+        <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+      </div>
+    {% endfor %}
+  {% endfor %}
+
+  <div class="row g-4">
+    {# Colonne gauche #}
+    <div class="col-12 col-lg-8">
+
+      <div class="card shadow-sm">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-start gap-3">
+            <div>
+              <h1 class="h3 mb-2">{{ project.title }}</h1>
+              <div class="text-muted small">
+                Fin : <strong>{{ project.endDate|date('Y-m-d') }}</strong>
+              </div>
+            </div>
+
+            {% if project.status == 'closed' %}
+              <span class="badge bg-danger">Clôturé</span>
+            {% else %}
+              <span class="badge bg-success">Actif</span>
+            {% endif %}
+          </div>
+
+          <p class="text-muted mt-3 mb-0">{{ project.description }}</p>
+
+          <hr class="my-4">
+
+          <div class="row g-3">
+            <div class="col-6 col-md-4">
+              <div class="p-3 bg-light rounded-3">
+                <div class="small text-muted">Collecté</div>
+                <div class="fw-bold">{{ project.currentAmount }}</div>
+              </div>
+            </div>
+            <div class="col-6 col-md-4">
+              <div class="p-3 bg-light rounded-3">
+                <div class="small text-muted">Objectif</div>
+                <div class="fw-bold">{{ project.goalAmount }}</div>
+              </div>
+            </div>
+            <div class="col-12 col-md-4">
+              <div class="p-3 bg-light rounded-3">
+                <div class="small text-muted">Progression</div>
+                <div class="fw-bold">{{ percent }}%</div>
+              </div>
+            </div>
+          </div>
+
+          <div class="mt-4">
+            <div class="d-flex justify-content-between small text-muted mb-1">
+              <span>{{ project.currentAmount }} / {{ project.goalAmount }}</span>
+              <span>{{ percent }}%</span>
+            </div>
+
+            <div class="progress" style="height: 10px;">
+              <div class="progress-bar {% if percent >= 100 %}bg-success{% endif %}"
+                   role="progressbar"
+                   style="width: {{ percent > 100 ? 100 : percent }}%;">
+              </div>
+            </div>
+          </div>
+
+          {% if project.status == 'closed' %}
+            <div class="alert alert-warning mt-4 mb-0">
+              Ce projet est clôturé. Les contributions sont fermées.
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+      <div class="card shadow-sm mt-4">
+        <div class="card-body">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h2 class="h5 mb-0">Dernières contributions</h2>
+            <span class="small text-muted">{{ lastContributions|length }} affichée(s)</span>
+          </div>
+
+          {% if lastContributions is empty %}
+            <div class="alert alert-secondary mb-0">Aucune contribution pour ce projet.</div>
+          {% else %}
+            <div class="list-group list-group-flush">
+              {% for c in lastContributions %}
+                <div class="list-group-item py-3">
+                  <div class="d-flex justify-content-between align-items-start">
+                    <div>
+                      <div class="fw-semibold">{{ c.donorName ?? 'Anonyme' }}</div>
+                      {% if c.message %}
+                        <div class="text-muted small mt-1">{{ c.message }}</div>
+                      {% endif %}
+                    </div>
+                    <div class="text-end">
+                      <div class="fw-bold">{{ c.amount }}</div>
+                      <div class="text-muted small">{{ c.contributedAt|date('Y-m-d H:i') }}</div>
+                    </div>
+                  </div>
+                </div>
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+
+    </div>
+
+    {# Colonne droite : contribution + carte bancaire Stripe #}
+    <div class="col-12 col-lg-4">
+      <div class="card shadow-sm {% if project.status != 'closed' %}position-sticky{% endif %}" style="top: 1rem;">
+        <div class="card-body">
+
+          <div class="d-flex align-items-center justify-content-between mb-3">
+            <h2 class="h5 mb-0">
+              <i class="bi bi-credit-card-2-front me-2"></i>Contribuer
+            </h2>
+            <span class="badge bg-light text-dark border">
+              <i class="bi bi-shield-lock me-1"></i>Paiement sécurisé
+            </span>
+          </div>
+
+          {% if project.status == 'closed' %}
+            <div class="text-muted">Les contributions sont fermées pour ce projet.</div>
+          {% else %}
+
+            {{ form_start(form, { attr: { id: 'payment-form' } }) }}
+              {{ form_row(form.donorName) }}
+              {{ form_row(form.amount) }}
+              {{ form_row(form.message) }}
+
+              <div class="mb-3">
+                <label class="form-label">Carte bancaire</label>
+
+                {# IMPORTANT: Stripe Elements monte ici #}
+                <div id="card-element" class="border rounded p-2 bg-white" style="min-height: 44px;"></div>
+
+                <div id="card-errors" class="text-danger small mt-1"></div>
+                <div class="text-muted small mt-2">
+                  Mode test Stripe : 4242 4242 4242 4242 • date future • CVC 123
+                </div>
+              </div>
+
+              <button class="btn btn-success w-100 mt-2">
+                <i class="bi bi-heart-fill me-2"></i>Contribuer
+              </button>
+            {{ form_end(form) }}
+
+            <div class="small text-muted mt-3">
+              Conseil : un petit message augmente la confiance des visiteurs.
+            </div>
+
+          {% endif %}
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+{% endblock %}
+
+{% block javascripts %}
+  {{ parent() }}
+
+  {% if project.status != 'closed' %}
+  <div class="alert alert-info">
+  Stripe key: {{ stripe_public_key }}
+</div>
+
+  <script>
+    window.addEventListener('load', function () {
+      const cardElement = document.getElementById('card-element');
+      const form = document.getElementById('payment-form');
+
+      // sécurité si l'élément n'existe pas
+      if (!cardElement || !form) return;
+
+      // Stripe doit être chargé dans base.html.twig
+      if (typeof Stripe === 'undefined') {
+        console.error('Stripe.js n’est pas chargé (vérifie base.html.twig)');
+        return;
+      }
+
+      const publicKey = "{{ stripe_public_key|e('js') }}";
+      if (!publicKey) {
+        console.error('Clé publique Stripe manquante');
+        return;
+      }
+
+      const stripe = Stripe(publicKey);
+      const elements = stripe.elements();
+
+      const card = elements.create('card', { hidePostalCode: true });
+      card.mount('#card-element');
+
+      // erreurs en live
+      card.on('change', function (event) {
+        document.getElementById('card-errors').textContent = event.error ? event.error.message : '';
+      });
+
+      form.addEventListener('submit', async (e) => {
+        e.preventDefault();
+
+        const { token, error } = await stripe.createToken(card);
+
+        if (error) {
+          document.getElementById('card-errors').textContent = error.message;
+          return;
+        }
+
+        const hidden = document.createElement('input');
+        hidden.type = 'hidden';
+        hidden.name = 'stripeToken';
+        hidden.value = token.id;
+        form.appendChild(hidden);
+
+        form.submit();
+      });
+    });
+  </script>
+  {% endif %}
+{% endblock %}

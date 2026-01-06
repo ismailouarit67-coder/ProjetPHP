@@ -1,0 +1,9 @@
+<form method="post"
+      action="{{ path('app_admin_project_delete', {'id': project.id}) }}"
+      onsubmit="return confirm('Confirmer la suppression ? Cette action est irréversible.');">
+  <input type="hidden" name="_token" value="{{ csrf_token('delete' ~ project.id) }}">
+
+  <button class="btn btn-danger">
+    Supprimer
+  </button>
+</form>

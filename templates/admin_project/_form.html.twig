@@ -1,0 +1,37 @@
+{{ form_start(form, { attr: { class: 'vstack gap-3' } }) }}
+
+  <div class="row g-3">
+    <div class="col-12">
+      {{ form_row(form.title, { label: 'Titre' }) }}
+    </div>
+
+    <div class="col-12">
+      {{ form_row(form.description, { label: 'Description' }) }}
+    </div>
+
+    <div class="col-md-4">
+      {{ form_row(form.goalAmount, { label: 'Objectif' }) }}
+    </div>
+
+    <div class="col-md-4">
+      {{ form_row(form.endDate, { label: 'Date de fin' }) }}
+    </div>
+
+    <div class="col-md-4">
+      {{ form_row(form.status, { label: 'Statut' }) }}
+    </div>
+
+    {# Si ton form contient currentAmount ou createdAt et tu veux les cacher:
+       supprime-les du ProjectType.php (recommandé pro) #}
+  </div>
+
+  <div class="d-flex gap-2 pt-2">
+    <button class="btn btn-primary">
+      {{ button_label|default('Enregistrer') }}
+    </button>
+    <a class="btn btn-outline-secondary" href="{{ path('app_admin_project_index') }}">
+      Annuler
+    </a>
+  </div>
+
+{{ form_end(form) }}
